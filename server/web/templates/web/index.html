@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+
+    <div class="isolate px-6 pt-8 lg:px-8">
+        <div class="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
+             aria-hidden="true">
+            <div class="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"
+                 style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"></div>
+        </div>
+        <div class="mx-auto max-w-5xl py-0">
+            <div class="flex sm:hidden mb-8 sm:mb-0 justify-center">
+                <div class="relative rounded-full px-3 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                    <a href="/admin/core/scan/" class="font-semibold text-indigo-600">
+                        <span class="absolute inset-0" aria-hidden="true"></span>Browse the latest barcode scans. <span
+                            aria-hidden="true">&rarr;</span>
+                    </a>
+                </div>
+            </div>
+            <div class="hidden sm:mb-8 sm:flex sm:justify-center">
+                <div class="relative rounded-full px-3 py-1 text-sm/6 text-gray-600 ring-1 ring-gray-900/10 hover:ring-gray-900/20">
+                    Browse the latest barcode scans.
+                    <a href="/admin/core/scan/" class="font-semibold text-indigo-600">
+                        <span class="absolute inset-0" aria-hidden="true"></span>Read more <span
+                            aria-hidden="true">&rarr;</span>
+                    </a>
+                </div>
+            </div>
+            <div class="text-center">
+                <h1 class="text-balance text-4xl font-semibold tracking-tight text-gray-900 sm:text-6xl">
+                    Police: Smart Driver's Vehicle Permits Monitoring System
+                </h1>
+                <p class="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
+                    Welcome Officer! Browse, monitor realtime police scans for monitoring validity of
+                    driver's permit licenses.
+                </p>
+            </div>
+        </div>
+
+        <div class="absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]"
+             aria-hidden="true">
+            <div class="relative left-[calc(50%+3rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%+36rem)] sm:w-[72.1875rem]"
+                 style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)"></div>
+        </div>
+    </div>
+
+
+
+    <div class="w-full flex mt-12 gap-4 flex-col md:flex-row">
+
+        <div class="flex-1 w-full">
+            <div class="p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+                <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+                    Recent Police Scan:
+                </h5>
+
+                <div class="flex w-full gap-4 mt-2 flex-col lg:flex-row">
+                    <div class="w-full flex-1">
+                        <img class="max-h-48 w-full rounded-lg aspect-square object-fit"
+                             src="https://flowbite.com/docs/images/examples/image-1@2x.jpg"
+                             alt="latest barcode scan">
+                    </div>
+
+                    <div class="w-full flex-1">
+                        <ul class="ml-4 list-disc mb-3 font-normal text-gray-700 dark:text-gray-300">
+                            <li>
+                                <strong>Full Name: </strong> Dlamini Lindelwa
+                            </li>
+                            <li>
+                                <strong>Gender: </strong> Female
+                            </li>
+                            <li>
+                                <strong>Licence Plate: </strong> 1231ADB32
+                            </li>
+                            <li>
+                                <strong>Barcode: </strong> 12DAAEAADB32
+                            </li>
+                            <br/>
+                            <li>
+                                <strong>Permit Valid Up to: </strong> 12-Dec-2025
+                            </li>
+                            <li>
+                                <strong>Permit Valid: </strong> <span class="text-green-600">No</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="flex-1 w-full">
+
+
+            <form id="manual-verification-form" method="post">
+                {% csrf_token %}
+
+                <label for="manual-verification"
+                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-900">
+                    Manual Verification:
+                </label>
+
+                <div class="relative">
+                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"></path>
+                        </svg>
+                    </div>
+                    <input type="search" id="manual-verification"
+                           class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                           placeholder="Enter driver's barcode...." required/>
+                    <button type="button" id="submit-btn"
+                            class="absolute end-2.5 bottom-2.5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center">
+                        <svg id="loader"
+                             aria-hidden="true" class="hidden inline w-4 h-4 me-3 text-white animate-spin"
+                             viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                                  fill="#E5E7EB"></path>
+                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                                  fill="currentColor"></path>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+
+                <p id="manual-verification-explanation" class="mt-2 text-sm text-gray-600 dark:text-gray-700">
+                    Manually verify the driver's licence by inputting the barcode
+                </p>
+            </form>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block js %}
+    <script type="text/javascript">
+        $(function () {
+            $('#submit-btn').on('click', function () {
+                const form = $('#manual-verification-form')
+                const loader = $("#loader");
+                const button = $(this);
+
+                loader.removeClass("hidden");
+                button.html('Loading...');
+
+                $.ajax({
+                    type: 'post',
+                    url: '/api/manual-verification/',
+                    data: form.serialize(),
+                    success: function (data) {
+                        console.log(data)
+                        loader.addClass("hidden");
+                        button.html('Search');
+                    },
+                    error: function (error) {
+                        console.log(error)
+                        loader.addClass("hidden");
+                        button.html('Search');
+                    }
+                });
+            });
+
+        });
+    </script>
+{% endblock %}

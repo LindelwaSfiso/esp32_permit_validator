@@ -1,0 +1,75 @@
+{% load compress %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% block title %}Police: Drivers permits monitoring system{% endblock %}
+    </title>
+
+    {% compress css %}
+        <link rel="stylesheet" href="{% static 'web/output.css' %}">
+    {% endcompress %}
+</head>
+<body class="bg-white dark:bg-gray-200">
+
+
+<header class="inset-x-0 top-0 z-[999] sticky backdrop-blur-md">
+    <nav class="flex items-center justify-between p-6 lg:px-8" aria-label="Global">
+        <div class="flex lg:flex-1">
+            <a href="/" class="-m-1.5 p-1.5">
+                <span class="sr-only">Police</span>
+                <img class="h-8 w-auto" src="https://upload.wikimedia.org/wikipedia/commons/f/fb/Flag_of_Eswatini.svg"
+                     alt="">
+            </a>
+        </div>
+        <div class="flex lg:hidden">
+            <button type="button" class="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-gray-700">
+                <span class="sr-only">Open main menu</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                     aria-hidden="true" data-slot="icon">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"></path>
+                </svg>
+            </button>
+        </div>
+
+
+        <div class="hidden lg:flex lg:gap-x-12">
+            <a href="/admin/core/driver/" class="text-sm/6 font-semibold text-gray-900">Drivers</a>
+            <a href="/admin/core/scan/" class="text-sm/6 font-semibold text-gray-900">Latest Scans</a>
+        </div>
+
+
+        <div class="hidden lg:flex lg:flex-1 lg:justify-end">
+            <a href="/admin" class="text-sm/6 font-semibold text-gray-900">Admin <span aria-hidden="true">&rarr;</span></a>
+        </div>
+
+    </nav>
+
+</header>
+
+<div class="container mx-auto mt-4 px-2 lg:px-4">
+    {% block content %}{% endblock %}
+</div>
+
+
+<footer class="bg-white rounded-lg shadow m-4 dark:bg-gray-300 mt-16">
+    <div class="w-full mx-auto max-w-screen-xl p-4 md:flex md:items-center md:justify-between">
+      <span class="text-sm text-gray-800 sm:text-center dark:text-gray-800">© 2024
+          <a href="/" class="hover:underline">Eswatini Police™</a>. All Rights Reserved.
+    </span>
+    </div>
+</footer>
+
+
+<script type="text/javascript" src="{% static 'web/jquery-3.7.1.min.js.js' %}"></script>
+{% block js %}
+{% endblock %}
+
+</body>
+</html>
