@@ -137,7 +137,7 @@ def manual_barcode_verification(request):
 			if driver:
 				Scan.objects.create(
 					driver=driver,
-					is_keypad=False,
+					is_keypad=True,
 				)
 
 				if driver.is_permit_valid():
