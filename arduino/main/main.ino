@@ -61,11 +61,10 @@ OV7670 *camera;
 WiFiMulti wifiMulti;
 WiFiServer server(80);
 
-String serverName = "http://192.168.98.69";
-String uploadServerPath = "/api/upload/";
-String manualVerificationPath = "/api/manual-verification/";
+String serverName = "http://192.168.8.101:8000";
+String uploadServerPath = serverName + "/api/upload/";
+String manualVerificationPath = serverName + "/api/manual-verification/";
 
-const int serverPort = 8000;
 WiFiClient client;
 
 unsigned char bmpHeader[BMP::headerSize];
@@ -100,7 +99,7 @@ void setup()
   }
 
 
-  camera = new OV7670(OV7670::Mode::QQVGA_RGB565, SIOD, SIOC, VSYNC, HREF, XCLK, PCLK, D0, D1, D2, D3, D4, D5, D6, D7);
+  camera = new OV7670(OV7670::Mode::QQQVGA_RGB565, SIOD, SIOC, VSYNC, HREF, XCLK, PCLK, D0, D1, D2, D3, D4, D5, D6, D7);
   BMP::construct16BitHeader(bmpHeader, camera->xres, camera->yres);
 
   server.begin();
@@ -109,26 +108,24 @@ void setup()
   lcd.setCursor(0, 0);
   lcd.print("Connected WiFi.");
   lcd.setCursor(0, 1);
-  lcd.print("Press # to process.");
+  lcd.print("");
+
+  keypad.setHoldTime(2000);
+
+  delay(1000);
+  printDefaults();
+
 }
 
 
 void loop() {
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("#:Capture & Send");
-  lcd.setCursor(0, 1);
-  lcd.print("Long*:Manual in.");
-
-
 
   // Check for key press
   char key = keypad.getKey();
 
   // If a key is pressed, check ->
   // - if # is pressed capture image and send for processing
-  // - if long * is pressed enter manual barcode input
+  // - if long any key enter manual barcode input
   if (key) {
     Serial.print("Key Pressed: ");
     Serial.println(key);
@@ -137,27 +134,17 @@ void loop() {
       // the user has pressed the enter key, therefore capture and send the image for processing
       captureAndSendPhoto();
     }
-
-    unsigned long pressStartTime = millis();
-    while (key == '*' && keypad.getKey() == '*') {
-      // While the key is still pressed
-
-      if (millis() - pressStartTime >= LONG_PRESS_THRESHOLD) {
-
-        Serial.print("Long press detected: ");
-        Serial.println(key);
-
-        // user has activated long press mode, entering barcode manually
-        sendManualVerification();
-
-      }
-      delay(50); // Debounce and reduce CPU load
+    else if (key == '*') {
+      // user has entered manual mode, entering barcode manually
+      sendManualVerification();
     }
 
   }
 
   // camera->oneFrame();
   // serve();
+
+  delay(100);
 
 }
 
@@ -229,18 +216,17 @@ void captureAndSendPhoto() {
       Serial.println();
       String payload = http.getString();
       proccessServerResponse(payload);
-      delay(5000);
+      delay(3000);
     }
 
     else {
       // can't connect to internet, timeout
-      Serial.print("FATAL ERROR!!! Error code: ");
+      Serial.print("Timeout, cannot connect...: ");
       Serial.println(statusCode);
-      Serial.println("ERROR: Server error, check serve logs for debugging.\n\n");
 
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("FATAL ERROR");
+      lcd.print("Timeout.......");
       lcd.setCursor(0, 1);
       lcd.print("CAN'T CONNECT.");
 
@@ -270,13 +256,9 @@ void sendManualVerification() {
   // function to send manual verification to the server
   // simple send an http post to the /manual-verification endpoint with the driver's barcode tag
 
-  if (WiFi.status() == WL_CONNECTED) {
+  Serial.println("User has entered manual mode, begin to process keypad to the server\n");
 
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Enter code......");
-    lcd.setCursor(0, 1);
-    lcd.print("#: Done *: Clear");
+  if (WiFi.status() == WL_CONNECTED) {
 
     WiFiClient client;
     HTTPClient http;
@@ -284,11 +266,19 @@ void sendManualVerification() {
     // capture keypad press
     String manualBarcode = "";
     char key;
-    Serial.println("Enter code via keypad (press # to finish):");
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Enter code......");
+    lcd.setCursor(0, 1);
+    lcd.print("#: Done *: Clear");
+    Serial.println("Enter code via keypad (#: finish), (*: clear):");
+
     while (true) {
       key = keypad.getKey();
       if (key) {
-        if (key == '#') {
+        if (key == '#' && manualBarcode.length() > 0) {
+          Serial.println("\n\nDone...");
           // user has confirmed barcode, therefore procceed and process the request to the server
           break; // Exit loop when '#' is pressed
         }
@@ -301,12 +291,16 @@ void sendManualVerification() {
             lcd.print("Exiting manual.");
             lcd.setCursor(0, 1);
             lcd.print("barcode input..");
+            Serial.println("Exiting manual barcode input...");
             delay(2000);
 
+            printDefaults();
             return; // the user has cancelled manual input mode.
           }
 
-          manualBarcode += "";
+          manualBarcode = "";
+          Serial.println("\n\nBarcode cleared..");
+          Serial.println("Enter code via keypad (press #: to finish), (*: exit)");
 
           lcd.clear();
           lcd.setCursor(0, 0);
@@ -315,7 +309,9 @@ void sendManualVerification() {
           lcd.print("#: Done *: Exit");
         }
         else {
-          manualBarcode += key;
+          if (key != '#')
+            manualBarcode += key;
+
           Serial.print(key);
 
           lcd.clear();
@@ -329,8 +325,8 @@ void sendManualVerification() {
       }
       delay(50); // Debounce
     }
-    Serial.println();
 
+    Serial.println("Connecting to server: " + serverName);
 
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -362,7 +358,7 @@ void sendManualVerification() {
       Serial.println();
       String payload = http.getString();
       proccessServerResponse(payload);
-      delay(5000);
+      delay(3000);
     }
 
     else if (statusCode == 403) {
@@ -371,7 +367,7 @@ void sendManualVerification() {
       Serial.println();
       String payload = http.getString();
       proccessServerResponse(payload);
-      delay(5000);
+      delay(3000);
     }
 
     else if (statusCode == 404) {
@@ -380,27 +376,30 @@ void sendManualVerification() {
       Serial.println();
       String payload = http.getString();
       proccessServerResponse(payload);
-      delay(5000);
+      delay(3000);
     }
 
     else {
       // can't connect to internet, timeout
+      Serial.print("Cant connect, connection timeout:  ");
+      Serial.println(statusCode);
+
+
+      // can't connect to internet, timeout
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("FATAL ERROR");
+      lcd.print("TImeout........");
       lcd.setCursor(0, 1);
       lcd.print("Can't connect.");
 
       delay(3000);
     }
 
-
-
     // Free resources
     http.end();
 
   } else {
-    Serial.println("Not CONNECTED WIFI!!!!");
+    Serial.println("Not CONNECTED WIFI!!!!\n");
 
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -432,6 +431,10 @@ void proccessServerResponse(String payload) {
 
     Serial.print("Details:  ");
     Serial.println(details);
+    Serial.print("LCD1: ");
+    Serial.println(lcd1);
+    Serial.print("LCD2: ");
+    Serial.println(lcd2);
     Serial.println("\n");
 
     lcd.clear();
@@ -440,10 +443,24 @@ void proccessServerResponse(String payload) {
     lcd.setCursor(0, 1);
     lcd.print(lcd2);
 
-    delay(5000);
+    delay(3000);
   }
+
+  printDefaults();
 }
 
+
+void printDefaults() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("#:Capture & Send");
+  lcd.setCursor(0, 1);
+  lcd.print("*:Manual Mode...");
+
+  Serial.println();
+  Serial.println("#:Capture & Send");
+  Serial.println("*:Manual Mode...\n");
+}
 
 
 void serve()
