@@ -13,9 +13,9 @@ char keys[ROWS][COLS] = {
 };
 
 // Connect the keypad rows to these ESP32 pins
-byte rowPins[ROWS] = {12, 14, 27, 26}; // R1, R2, R3, R4
+byte rowPins[ROWS] = {19, 18, 5, 3}; // R1, R2, R3, R4
 // Connect the keypad columns to these ESP32 pins
-byte colPins[COLS] = {25, 33, 32};     // C1, C2, C3
+byte colPins[COLS] = {26, 25, 23};     // C1, C2, C3
 
 // Create the Keypad object
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
