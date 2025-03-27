@@ -107,17 +107,18 @@ def verify_barcode_scan(request):
 		}, status=status.HTTP_200_OK)
 
 
+@api_view(["GET"])
 def load_latest_scan(request):
 	"""
 	AJAX endpoint, for loading or getting the latest police scan.
 	Simulates realtime communication.
 	"""
 	is_ajax = request.META.get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest'
-	if is_ajax:
-		latest_scan = Scan.objects.latest()
+	if is_ajax or True:
+		latest_scan = Scan.objects.last()
 		return JsonResponse({
 			'message': "Query successful..",
-			'scan': ScanSerializer(latest_scan).data
+			'scan': ScanSerializer(latest_scan, context={'request': request}).data
 		}, status=200)
 
 	return JsonResponse({

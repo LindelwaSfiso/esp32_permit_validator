@@ -14,6 +14,12 @@ class Driver(models.Model):
 	barcode = models.CharField(max_length=100)
 	valid_up_to = models.DateTimeField()
 
+	def full_name(self):
+		return f"{self.first_name} {self.last_name}"
+
+	def __str__(self):
+		return self.full_name()
+
 	def format_date(self):
 		return self.valid_up_to.strftime("%m/%y")
 

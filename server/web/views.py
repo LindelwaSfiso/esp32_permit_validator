@@ -8,5 +8,6 @@ from core.models import Scan
 def index(request):
     latest_capture = Scan.objects.last()
     return render(request, "web/index.html", {
+        'valid':  Scan.objects.last() is not None,
         'capture': latest_capture
     })

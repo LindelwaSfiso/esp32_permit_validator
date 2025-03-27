@@ -58,30 +58,56 @@
                 <div class="flex w-full gap-4 mt-2 flex-col lg:flex-row">
                     <div class="w-full flex-1">
                         <img class="max-h-48 w-full rounded-lg aspect-square object-scale-down"
-                             src="https://flowbite.com/docs/images/examples/image-1@2x.jpg"
-                             alt="latest barcode scan">
+                             src="{% if capture.saved_scan %}{{ capture.saved_scan.url }}{% else %}https://flowbite.com/docs/images/examples/image-1@2x.jpg{% endif %}"
+                             alt="latest barcode scan"
+                             id="scan_image">
+                     </span>
                     </div>
 
                     <div class="w-full flex-1">
                         <ul class="ml-4 list-disc mb-3 font-normal text-gray-700 dark:text-gray-300">
                             <li>
-                                <strong>Full Name: </strong> Dlamini Lindelwa
+                                <strong>Full Name: </strong>
+                                <span id="driver_name">
+                                    {% if valid %}{{ capture.driver.full_name }}{% else %}No Scan Yet{% endif %}
+                                </span>
                             </li>
                             <li>
-                                <strong>Gender: </strong> Female
+                                <strong>Gender: </strong>
+                                <span id="driver_gender">
+                                    {% if valid %}{{ capture.driver.get_gender_display }}{% else %}No Scan
+                                        Yet{% endif %}
+                                </span>
                             </li>
                             <li>
-                                <strong>Licence Plate: </strong> 1231ADB32
+                                <strong>Licence Plate: </strong>
+                                <span id="driver_plate">
+                                    {% if valid %}{{ capture.driver.licence_number }}{% else %}No Scan Yet{% endif %}
+                                </span>
                             </li>
                             <li>
-                                <strong>Barcode: </strong> 12DAAEAADB32
+                                <strong>Barcode: </strong>
+                                <span id="driver_barcode">
+                                    {% if valid %}{{ capture.driver.barcode }}{% else %}No Scan Yet{% endif %}
+                                </span>
                             </li>
                             <br/>
                             <li>
-                                <strong>Permit Valid Up to: </strong> 12-Dec-2025
+                                <strong>Permit Valid Up to: </strong>
+                                <span id="driver_validity">
+                                    {% if valid %}{{ capture.driver.valid_up_to|date:"Y-m-d" }}{% else %}No Scan
+                                        Yet{% endif %}
+                                </span>
                             </li>
                             <li>
-                                <strong>Permit Valid: </strong> <span class="text-green-600">No</span>
+                                <strong>Permit Valid: </strong>
+                                <span id="is_valid">
+                                    {% if valid and capture.driver.is_permit_valid %}
+                                        <span class="text-green-600">Yes</span>
+                                    {% else %}
+                                        <span class="text-red-600">No</span>
+                                    {% endif %}
+                                </span>
                             </li>
                         </ul>
                     </div>
@@ -91,48 +117,48 @@
         </div>
 
 
-{#        <div class="flex-1 w-full">#}
-{##}
-{##}
-{#            <form id="manual-verification-form" method="post">#}
-{#                {% csrf_token %}#}
-{##}
-{#                <label for="manual-verification"#}
-{#                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-900">#}
-{#                    Manual Verification:#}
-{#                </label>#}
-{##}
-{#                <div class="relative">#}
-{#                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">#}
-{#                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"#}
-{#                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">#}
-{#                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"#}
-{#                                  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"></path>#}
-{#                        </svg>#}
-{#                    </div>#}
-{#                    <input type="search" id="manual-verification"#}
-{#                           class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"#}
-{#                           placeholder="Enter driver's barcode...." required/>#}
-{#                    <button type="button" id="submit-btn"#}
-{#                            class="absolute end-2.5 bottom-2.5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center">#}
-{#                        <svg id="loader"#}
-{#                             aria-hidden="true" class="hidden inline w-4 h-4 me-3 text-white animate-spin"#}
-{#                             viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">#}
-{#                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"#}
-{#                                  fill="#E5E7EB"></path>#}
-{#                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"#}
-{#                                  fill="currentColor"></path>#}
-{#                        </svg>#}
-{#                        Search#}
-{#                    </button>#}
-{#                </div>#}
-{##}
-{#                <p id="manual-verification-explanation" class="mt-2 text-sm text-gray-600 dark:text-gray-700">#}
-{#                    Manually verify the driver's licence by inputting the barcode#}
-{#                </p>#}
-{#            </form>#}
-{##}
-{#        </div>#}
+        {#        <div class="flex-1 w-full">#}
+        {##}
+        {##}
+        {#            <form id="manual-verification-form" method="post">#}
+        {#                {% csrf_token %}#}
+        {##}
+        {#                <label for="manual-verification"#}
+        {#                       class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-900">#}
+        {#                    Manual Verification:#}
+        {#                </label>#}
+        {##}
+        {#                <div class="relative">#}
+        {#                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">#}
+        {#                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"#}
+        {#                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">#}
+        {#                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"#}
+        {#                                  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"></path>#}
+        {#                        </svg>#}
+        {#                    </div>#}
+        {#                    <input type="search" id="manual-verification"#}
+        {#                           class="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"#}
+        {#                           placeholder="Enter driver's barcode...." required/>#}
+        {#                    <button type="button" id="submit-btn"#}
+        {#                            class="absolute end-2.5 bottom-2.5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2 text-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 inline-flex items-center">#}
+        {#                        <svg id="loader"#}
+        {#                             aria-hidden="true" class="hidden inline w-4 h-4 me-3 text-white animate-spin"#}
+        {#                             viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">#}
+        {#                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"#}
+        {#                                  fill="#E5E7EB"></path>#}
+        {#                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"#}
+        {#                                  fill="currentColor"></path>#}
+        {#                        </svg>#}
+        {#                        Search#}
+        {#                    </button>#}
+        {#                </div>#}
+        {##}
+        {#                <p id="manual-verification-explanation" class="mt-2 text-sm text-gray-600 dark:text-gray-700">#}
+        {#                    Manually verify the driver's licence by inputting the barcode#}
+        {#                </p>#}
+        {#            </form>#}
+        {##}
+        {#        </div>#}
     </div>
 
 {% endblock %}
@@ -141,31 +167,63 @@
 {% block js %}
     <script type="text/javascript">
         $(function () {
-            $('#submit-btn').on('click', function () {
-                const form = $('#manual-verification-form')
-                const loader = $("#loader");
-                const button = $(this);
+            let isSending = false; // Flag to prevent multiple simultaneous requests
 
-                loader.removeClass("hidden");
-                button.html('Loading...');
+            function sendForm() {
+                if (isSending) return; // Prevent new requests while one is in progress
+
+                isSending = true; // Set flag
 
                 $.ajax({
-                    type: 'post',
-                    url: '/api/manual-verification/',
-                    data: form.serialize(),
+                    type: 'get',
+                    url: '/api/load-latest-scan/',
                     success: function (data) {
-                        console.log(data)
-                        loader.addClass("hidden");
-                        button.html('Search');
+                        console.log(data);
+
+                        if (data.scan && data.scan.saved_scan) {
+                            $('#scan_image').attr('src', data.scan.saved_scan);
+                        } else {
+                            $('#scan_image').attr('src', 'https://flowbite.com/docs/images/examples/image-1@2x.jpg');
+                        }
+
+                        if (data.scan && data.scan.driver) {
+
+                            const driver = data.scan.driver;
+
+                            // Update driver details on success
+                            if (driver.full_name) {
+                                $('#driver_name').html(driver.full_name);
+                            }
+                            if (driver.gender) {
+                                $('#driver_gender').html(driver.gender);
+                            }
+                            if (driver.licence_number) {
+                                $('#driver_plate').html(driver.licence_number);
+                            }
+                            if (driver.valid_up_to) {
+                                $('#driver_validity').html(driver.valid_up_to);
+                            }
+
+                            if (driver.is_valid) {
+                                $('#is_valid').html('<span class="text-green-600">Yes</span>');
+                            } else {
+                                $('#is_valid').html('<span class="text-red-600">No</span>');
+                            }
+                        }
+
+                        isSending = false; // Reset flag
                     },
                     error: function (error) {
-                        console.log(error)
-                        loader.addClass("hidden");
-                        button.html('Search');
+                        console.log(error);
+                        isSending = false; // Reset flag
                     }
                 });
-            });
+            }
+
+            // Send form every 5 seconds
+            setInterval(sendForm, 3000); // 5000 milliseconds = 5 seconds
 
         });
     </script>
+
 {% endblock %}
