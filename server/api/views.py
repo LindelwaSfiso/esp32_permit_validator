@@ -35,7 +35,7 @@ def verify_barcode_scan(request):
 					'error': f'Failed to load image using Pillow: {pil_error}',
 					'lcd1': 'E400, received',
 					'lcd2': 'corrupted img!'
-				}, status=status.HTTP_400_BAD_REQUEST)
+				}, status=status.HTTP_200_OK)
 
 			try:
 				barcodes = decode(frame)
@@ -45,7 +45,7 @@ def verify_barcode_scan(request):
 						'details': 'No barcodes found in the image',
 						'lcd1': 'E404, found NO',
 						'lcd2': 'barcode in img'
-					}, status=status.HTTP_404_NOT_FOUND)
+					}, status=status.HTTP_200_OK)
 
 				for barcode in barcodes:
 					# checks the first barcode only
@@ -129,9 +129,11 @@ def load_latest_scan(request):
 @api_view(["POST"])
 def manual_barcode_verification(request):
 	try:
+		print("Request DATA: ", request.data)
 		serializer = ManualVerificationSerializer(data=request.data)
 		if serializer.is_valid():
-			driver = Driver.objects.filter(barcode=serializer.barcode).first()
+			print("Serializer valid")
+			driver = Driver.objects.filter(barcode=serializer.validated_data['barcode']).first()
 			if driver:
 				Scan.objects.create(
 					driver=driver,
@@ -154,11 +156,12 @@ def manual_barcode_verification(request):
 
 			else:
 				return Response({
-					'details': f"Driver with barcode {serializer.barcode} not found.",
+					'details': f"Driver with barcode {serializer.validated_data['barcode']} not found.",
 					'lcd1': "Driver Not Found",
-					'lcd2': f"E404: {serializer.barcode[:10]}",
+					'lcd2': f"E404: {serializer.validated_data['barcode'][:10]}",
 				}, status=status.HTTP_404_NOT_FOUND)
 
+		print("Not valid, ", serializer.errors)
 		return Response({
 			'error': "Invalid data format. Please check your input.",
 			'lcd1': "E400: Data Error....."[:16],
@@ -166,6 +169,7 @@ def manual_barcode_verification(request):
 		}, status=status.HTTP_400_BAD_REQUEST)
 
 	except Exception as e:
+		print("Internal Error: ", e)
 		return Response({
 			'details': f"Internal server error: {e}",
 			'lcd1': "Server Error"[:16],
