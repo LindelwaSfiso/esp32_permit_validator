@@ -4,7 +4,7 @@ from core.models import Scan, Driver
 
 
 class CaptureImageSerializer(serializers.Serializer):
-	capture = serializers.ImageField(required=True)
+	capture = serializers.FileField(required=True)
 
 
 class ManualVerificationSerializer(serializers.Serializer):

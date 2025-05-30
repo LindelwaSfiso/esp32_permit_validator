@@ -19,10 +19,12 @@ OV7670::OV7670(Mode m, const int SIOD, const int SIOC, const int VSYNC, const in
     case VGA_RGB565:
       xres = 640;
       yres = 480;
+      VGARGB565();
       break;
     case QVGA_RGB565:
       xres = 320;
       yres = 240;
+      QVGARGB565();
       break;
     case QQVGA_RGB565:
       xres = 160;
@@ -69,6 +71,99 @@ void OV7670::frameControl(int hStart, int hStop, int vStart, int vStop)
   i2c.writeRegister(ADDR, REG_VSTOP, vStop >> 2);
   i2c.writeRegister(ADDR, REG_VREF, ((vStop & 0b11) << 2) | (vStart & 0b11));
 }
+
+
+///////////////////////////////////////
+
+
+void OV7670::QVGA()
+{
+    i2c.writeRegister(ADDR, REG_COM3, 0x04);  //DCW enable -- done
+    i2c.writeRegister(ADDR, REG_COM14, 0x19); //pixel clock divided by 4, manual scaling enable, DCW and PCLK controlled by register  -- done
+    i2c.writeRegister(ADDR, REG_SCALING_XSC, 0x3a); // -- done
+    i2c.writeRegister(ADDR, REG_SCALING_YSC, 0x35); // -- done
+    i2c.writeRegister(ADDR, REG_SCALING_DCWCTR, 0x11); //downsample by 2
+    i2c.writeRegister(ADDR, REG_SCALING_PCLK_DIV, 0xf1); //pixel clock divided by 8
+    i2c.writeRegister(ADDR, REG_SCALING_PCLK_DELAY, 0x02);
+}
+
+void OV7670::VGA()
+{
+    i2c.writeRegister(ADDR, REG_COM3, 0x0);  //DCW enable -- done
+//    i2c.writeRegister(ADDR, REG_COM14, 0x19); //pixel clock divided by 4, manual scaling enable, DCW and PCLK controlled by register  -- done
+    i2c.writeRegister(ADDR, REG_COM14, 0); //pixel clock divided by 4, manual scaling enable, DCW and PCLK controlled by register  -- done
+//    i2c.writeRegister(ADDR, REG_SCALING_XSC, 0x3a); // -- done
+//    i2c.writeRegister(ADDR, REG_SCALING_YSC, 0x35); // -- done
+  //  i2c.writeRegister(ADDR, REG_SCALING_DCWCTR, 0x11); //downsample by 2
+  //  i2c.writeRegister(ADDR, REG_SCALING_PCLK_DIV, 0xf0); //pixel clock divided by 8
+  //  i2c.writeRegister(ADDR, REG_SCALING_PCLK_DELAY, 0x02);
+}
+
+
+void OV7670::VGARGB565()
+{
+  i2c.writeRegister(ADDR, REG_COM7, 0b10000000);  //all registers default
+      
+  i2c.writeRegister(ADDR, REG_CLKRC, 0b10000000); //double clock
+  i2c.writeRegister(ADDR, REG_COM11, 0b1000 | 0b10); //enable auto 50/60Hz detect + exposure timing can be less...
+
+  i2c.writeRegister(ADDR, REG_COM7, 0b100); //RGB
+  i2c.writeRegister(ADDR, REG_COM15, 0b11000000 | 0b010000); //RGB565
+
+  /*
+  i2c.writeRegister(ADDR, REG_COM7, 0b10000000);  //all registers default
+      
+  i2c.writeRegister(ADDR, REG_CLKRC, 0b10000000); //double clock
+  i2c.writeRegister(ADDR, REG_COM11, 0b1000 | 0b10); //enable auto 50/60Hz detect + exposure timing can be less...
+
+  i2c.writeRegister(ADDR, REG_COM7, 0b100); //RGB
+  i2c.writeRegister(ADDR, REG_COM15, 0b11000000 | 0b010000); //RGB565
+*/
+  VGA();
+
+  // hstart, hstop, vstart, vstop
+  frameControl(168, 24, 12, 492); //no clue why horizontal needs such strange values, vertical works ok
+  
+  //i2c.writeRegister(ADDR, REG_COM10, 0x02); //VSYNC negative
+  //i2c.writeRegister(ADDR, REG_MVFP, 0x2b);  //mirror flip
+
+  i2c.writeRegister(ADDR, 0xb0, 0x84);// no clue what this is but it's most important for colors
+  saturation(0);
+  i2c.writeRegister(ADDR, 0x13, 0xe7); //AWB on
+  i2c.writeRegister(ADDR, 0x6f, 0x9f); // Simple AWB
+}
+
+
+void OV7670::QVGARGB565()
+{
+  i2c.writeRegister(ADDR, REG_COM7, 0b10000000);  //all registers default
+      
+  i2c.writeRegister(ADDR, REG_CLKRC, 0b10000000); //double clock
+  i2c.writeRegister(ADDR, REG_COM11, 0b1000 | 0b10); //enable auto 50/60Hz detect + exposure timing can be less...
+
+  i2c.writeRegister(ADDR, REG_COM7, 0b100); //RGB
+  i2c.writeRegister(ADDR, REG_COM15, 0b11000000 | 0b010000); //RGB565
+
+  QVGA();
+
+  // hstart, hstop, vstart, vstop
+  frameControl(168, 24, 12, 492); //no clue why horizontal needs such strange values, vertical works ok
+  
+  //i2c.writeRegister(ADDR, REG_COM10, 0x02); //VSYNC negative
+  //i2c.writeRegister(ADDR, REG_MVFP, 0x2b);  //mirror flip
+
+  i2c.writeRegister(ADDR, 0xb0, 0x84);// no clue what this is but it's most important for colors
+  saturation(0);
+  i2c.writeRegister(ADDR, 0x13, 0xe7); //AWB on
+  i2c.writeRegister(ADDR, 0x6f, 0x9f); // Simple AWB
+}
+
+
+
+
+
+
+////////////////////////////////////
 
 void OV7670::QQQVGA()
 {

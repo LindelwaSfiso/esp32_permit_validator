@@ -23,6 +23,11 @@ class OV7670: public I2SCamera
     void testImage();
     void saturation(int s);
     void frameControl(int hStart, int hStop, int vStart, int vStop);
+    void QVGA();
+    void QVGARGB565();
+    void VGA();
+    void VGARGB565();
+
     void QQVGA();
     void QQVGARGB565();
     void QQQVGA();

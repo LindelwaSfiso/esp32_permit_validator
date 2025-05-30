@@ -1,15 +1,19 @@
-import numpy as np
 from PIL import Image
 from io import BytesIO
-from pyzbar.pyzbar import decode
 
 from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from api.serializers import CaptureImageSerializer, ScanSerializer, ManualVerificationSerializer
+from api.serializers import ScanSerializer, ManualVerificationSerializer
 from core.models import Scan, Driver
+from google import genai
+
+GEMINI_API_KEY = "AIzaSyD8Me5mk5GTlhhiGjveoDbvE_vM0FpXfT4"
+
+# Only run this block for Gemini Developer API
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 @api_view(["POST"])
@@ -19,84 +23,86 @@ def verify_barcode_scan(request):
 	"""
 
 	try:
-		serializer = CaptureImageSerializer(data=request.data)
-		if serializer.is_valid():
-			print("\nSerializer is valid\n")
-			print(serializer.validated_data)
+		if request.content_type != 'image/jpeg':
+			return Response({
+				'error': f'Unsupported media type "{request.content_type}" in request. Expected image/jpeg.',
+				'lcd1': "E400: Media Error"[:16],
+				'lcd2': "Expected JPEG"[:16]
+			}, status=status.HTTP_200_OK)
 
-			try:
-				# Load BMP using Pillow
-				image_bytes = serializer.validated_data['capture'].read()
-				img = Image.open(BytesIO(image_bytes))
-				frame = np.array(img)  # Convert Pillow image to NumPy array
-			except Exception as pil_error:
-				print(f"Pillow Error: {pil_error}")
+		image_bytes = request.body
+		try:
+			img = Image.open(BytesIO(image_bytes))
+		except Exception as pil_error:
+			print(f"Pillow Error: {pil_error}")
+			return Response({
+				'error': f'Failed to load image using Pillow: {pil_error}',
+				'lcd1': 'E400, received',
+				'lcd2': 'corrupted img!'
+			}, status=status.HTTP_200_OK)
+
+		try:
+			import os
+			img = Image.open(os.path.join('api/image.png'))
+			response = client.models.generate_content(
+				model="gemini-2.0-flash",
+				contents=[
+					img,
+					"What is the barcode in this image? If there is no barcode, say 'No barcode found'. "
+					"Only output the raw barcode value if found."
+				]
+			)
+
+			if not response.text:
+				print("barcodes not found")
 				return Response({
-					'error': f'Failed to load image using Pillow: {pil_error}',
-					'lcd1': 'E400, received',
-					'lcd2': 'corrupted img!'
+					'details': 'No barcodes found in the image',
+					'lcd1': 'E404, found NO',
+					'lcd2': 'barcode in img'
 				}, status=status.HTTP_200_OK)
 
-			try:
-				barcodes = decode(frame)
-				if not barcodes:
-					print("barcodes not found")
+			# checks the first barcode only
+			data = str(response.text).strip().replace(" ", "")
+			print("GEMINI RETURNED THIS: ", response.text)
+
+			# save the scanned data
+			driver = Driver.objects.filter(barcode=data).first()
+			if driver:
+				Scan.objects.create(
+					driver=driver,
+					is_keypad=False,
+					saved_scan=img
+				)
+
+				if driver.is_permit_valid():
 					return Response({
-						'details': 'No barcodes found in the image',
-						'lcd1': 'E404, found NO',
-						'lcd2': 'barcode in img'
+						"details": "Barcode verification successful. Permit valid.",
+						"lcd1": f"Permit OK: {driver.format_date()}"[:16],
+						"lcd2": f"Driver: {driver.get_initials()}",
 					}, status=status.HTTP_200_OK)
 
-				for barcode in barcodes:
-					# checks the first barcode only
-					data = barcode.data.decode("utf-8")
-					data = str(data).strip().replace(" ", "")
+				else:
+					return Response({
+						"details": "Barcode verification successful. Permit invalid.",
+						"lcd1": f"Expired: {driver.format_date()}"[:16],
+						"lcd2": f"Driver: {driver.get_initials()}",
+					}, status=status.HTTP_200_OK)
 
-					# save the scanned data
-					driver = Driver.objects.filter(barcode=data).first()
-					if driver:
-						Scan.objects.create(
-							driver=driver,
-							is_keypad=False,
-							saved_scan=serializer.validated_data['capture']
-						)
-
-						if driver.is_permit_valid():
-							return Response({
-								"details": "Barcode verification successful. Permit valid.",
-								"lcd1": f"Permit OK: {driver.format_date()}"[:16],
-								"lcd2": f"Driver: {driver.get_initials()}",
-							}, status=status.HTTP_200_OK)
-
-						else:
-							return Response({
-								"details": "Barcode verification successful. Permit invalid.",
-								"lcd1": f"Expired: {driver.format_date()}"[:16],
-								"lcd2": f"Driver: {driver.get_initials()}",
-							}, status=status.HTTP_200_OK)
-
-					else:
-						print(f'Driver with barcode {data} not found.')
-						return Response({
-							'details': f"Driver with barcode {data} not found.",
-							'lcd1': "Driver Not Found",
-							'lcd2': f"E404: {data[:10]}",
-						}, status=status.HTTP_200_OK)
-
-			except Exception as decode_error:
-				print(f"Decode Error: {decode_error}")
+			else:
+				print(f'Driver with barcode {data} not found.')
 				return Response({
-					'error': f'Failed to decode barcode: {decode_error}',
-					'lcd1': "E400, failed to.",
-					'lcd2': f"decode img[bad]",
+					'details': f"Driver with barcode {data} not found.",
+					'lcd1': "Driver Not Found",
+					'lcd2': f"E404: {data[:10]}",
 				}, status=status.HTTP_200_OK)
 
-		print("Serialization Errors: ", serializer.errors)
-		return Response({
-			'error': "Invalid data format. Please check your input.",
-			'lcd1': "E400: Data Error....."[:16],
-			'lcd2': "Check Input....."[:16]
-		}, status=status.HTTP_200_OK)
+		except Exception as geminiApi:
+			print(f"Decode GeminiAPI: {geminiApi}")
+			return Response({
+				'error': f'Failed to decode barcode: {geminiApi}',
+				'lcd1': "E400, failed to.",
+				'lcd2': f"decode img[bad]",
+			}, status=status.HTTP_200_OK)
 
 	except Exception as e:
 		print("General Error: ", e)

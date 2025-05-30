@@ -141,8 +141,8 @@ void loop() {
 
   }
 
-  // camera->oneFrame();
-  // serve();
+  camera->oneFrame();
+  serve();
 
   delay(100);
 
