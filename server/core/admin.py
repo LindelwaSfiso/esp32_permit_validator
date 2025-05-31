@@ -1,26 +1,27 @@
 from django.contrib import admin
-from core.models import Driver, DriverTicket, Scan
+from core.models import Driver, VerificationRecord
 
 
 @admin.register(Driver)
 class DriverAdmin(admin.ModelAdmin):
 	list_per_page = 25
-	list_display = ["id", "first_name", "last_name", "barcode", "is_permit_valid"]
+	list_display = ["id", "national_id", "first_name", "last_name", "barcode", "is_permit_valid", "valid_up_to"]
+
+	def is_permit_valid(self, obj):
+		return obj.is_permit_valid()  # Call the method from the model
+
+	is_permit_valid.boolean = True
 
 
-@admin.register(DriverTicket)
-class DriverTicketsAdmin(admin.ModelAdmin):
+@admin.register(VerificationRecord)
+class VerificationRecordAdmin(admin.ModelAdmin):
 	list_per_page = 25
-	list_display = ["driver", "amount", "get_status_display", "created_at"]
+	list_display = ["driver", 'is_permit_valid', 'valid_up_to', "is_manual"]
 
-
-@admin.register(Scan)
-class ScansAdmin(admin.ModelAdmin):
-	list_per_page = 25
-	list_display = ["driver", 'is_valid', 'valid_up_to', "is_keypad", "saved_scan"]
-
-	def is_valid(self, scan):
+	def is_permit_valid(self, scan):
 		return scan.driver.is_permit_valid()
+
+	is_permit_valid.boolean = True
 
 	def valid_up_to(self, scan):
 		return scan.driver.valid_up_to

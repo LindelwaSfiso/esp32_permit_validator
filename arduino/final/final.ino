@@ -54,6 +54,12 @@ char lastKey = '\0';
 byte tapCount = 0;
 
 
+// --- Global Variables (add these outside any function) ---
+char pendingOutputChar = '\0';                // Stores the character ready to be output
+unsigned long outputReadyTime = 0;            // Timestamp when the character became ready for output
+const unsigned long MULTI_TAP_TIMEOUT = 500;  // Define timeout for clarity
+
+
 
 // ===========================
 // I2C LCD configuration
@@ -64,7 +70,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 // ===========================
 // Server details
 // ===========================
-String serverName = "http://192.168.8.101:8000";
+String serverName = "http://192.168.13.69:8000";
 String verifyServerPath = serverName + "/api/verify/";
 
 
@@ -201,12 +207,13 @@ void captureAndSendBarcode() {
       // configure http, set content-type to JSON
       http.addHeader("Content-Type", "application/json");
 
+      scannedBarcode.trim(); // Removes leading and trailing whitespace characters (including \n, \r, spaces, tabs)
+
       // Construct HTTP Request Payload as JSON
-      // Server expecting this format => {"barcode": "ASD3412BH"}
+      // Server expecting this format => {"barcode": "ASD3412BH", "is_manual": false}
       String httpRequestData = "{\"barcode\": \"";
       httpRequestData.concat(scannedBarcode);
-      httpRequestData.concat("\"}");
-
+      httpRequestData.concat("\", \"is_manual\": false}");
 
       lcd.clear();
       lcd.setCursor(0, 0);
@@ -294,20 +301,35 @@ void sendManualVerification() {
 
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Enter code......");
+    lcd.print("->Enter code....");
     lcd.setCursor(0, 1);
     lcd.print("#: Done *: Clear");
 
     Serial.println("Enter code via keypad (#: finish), (*: clear):");
 
     while (true) {
-      key = keypad.getKey();
+      key = keypad.getKey();  // Get the current key press
+      char charToAdd = '\0';  // This will hold the character to be appended to manualBarcode
+
+      // --- Step 1: Process current key press (if any) ---
       if (key) {
-        if (key == '#' && manualBarcode.length() > 0) {
-          Serial.println("\n\nDone...");
-          // user has confirmed barcode, therefore procceed and process the request to the server
-          break;  // Exit loop when '#' is pressed
+        // If it's a special key, handle it immediately
+        if (key == '#') {
+          if (manualBarcode.length() > 0) {
+            // Clear any pending character if '#' is pressed for immediate action
+            pendingOutputChar = '\0';
+            outputReadyTime = 0;
+
+            Serial.println("\n\nDone...");
+            break;  // Exit loop when '#' is pressed
+          }
+          // If '#' is pressed ;2but manualBarcode is empty, ignore it or provide feedback
+          // (Current logic does nothing here, which is fine)
         } else if (key == '*') {
+          // Clear any pending character if '*' is pressed for immediate action
+          pendingOutputChar = '\0';
+          outputReadyTime = 0;
+
           if (manualBarcode.length() == 0) {
             // if the user previously cleared, exit now
             lcd.clear();
@@ -315,25 +337,23 @@ void sendManualVerification() {
             lcd.print("Exiting manual.");
             lcd.setCursor(0, 1);
             lcd.print("barcode input..");
-            delay(2000);
+            delay(2000);  // Short delay to show message
 
-            printDefaults();
-            return;  // the user has cancelled manual input mode.
+            printDefaults();  // Assuming this function resets LCD/state
+            return;           // the user has cancelled manual input mode.
           }
 
           // attempt to backspace
           manualBarcode.remove(manualBarcode.length() - 1);
 
           if (manualBarcode.length() == 0) {
-            // show exit command
             lcd.clear();
             lcd.setCursor(0, 0);
-            lcd.print("Barcode cleared");
+            lcd.print("-> ");
             lcd.setCursor(0, 1);
-            lcd.print("        *: Exit");
-
+            lcd.print("------   *: Exit");
           } else {
-            // else print the remaining barcode after clearing
+            // print the new barcode after backspace
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print("->");
@@ -342,23 +362,44 @@ void sendManualVerification() {
             lcd.print("#: Done *: Clear");
           }
 
-        } else {
-          if (key != '#') {
-            // this is where we process the keyad input
-            // we try to adapt 4x3 keypad to accept alphanumeric values
-            if (processMultiTap(key) != '\0') manualBarcode += key;
-          }
-
-          lcd.clear();
-          lcd.setCursor(0, 0);
-          lcd.print("->");
-          lcd.print(manualBarcode);
-          lcd.setCursor(0, 1);
-          lcd.print("#: Done *: Clear");
+        } else {  // It's an alphanumeric key
+          // Process the multi-tap. This function will internally update pendingOutputChar.
+          // It will *not* return the char directly for the current tap.
+          // It might return a *previously pending* char if the timeout for that one expired.
+          charToAdd = processMultiTap(key);  // This might return a finalized char from a *previous* tap sequence
+        }
+      } else {
+        // No new key pressed
+        // --- Step 2: Check for timeout of the PENDING character ---
+        // If there's a character pending and its timeout has elapsed since last touch
+        if (pendingOutputChar != '\0' && (millis() - lastPressTime > MULTI_TAP_TIMEOUT)) {
+          charToAdd = pendingOutputChar;  // This character is now finalized
+          pendingOutputChar = '\0';       // Clear pending
+          outputReadyTime = 0;            // Reset time
         }
       }
-      delay(50);  // Debounce
+
+      // --- Step 3: Append finalized character (if any) ---
+      if (charToAdd != '\0') {
+        manualBarcode += charToAdd;
+
+        Serial.print("Added to barcode: ");  // Debugging: show what's added
+        Serial.println(charToAdd);
+
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("->");
+        lcd.print(manualBarcode);
+        lcd.setCursor(0, 1);
+        lcd.print("#: Done *: Clear");
+      }
+
+      delay(50);  // debounce
     }
+
+    http.begin(client, verifyServerPath.c_str());
+    // configure http, set content-type to JSON
+    http.addHeader("Content-Type", "application/json");
 
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -367,17 +408,11 @@ void sendManualVerification() {
     lcd.print("Please wait.....");
     delay(1500);
 
-
-    http.begin(client, verifyServerPath.c_str());
-    // configure http, set content-type to JSON
-    http.addHeader("Content-Type", "application/json");
-
-
     // Construct HTTP Request Payload as JSON
-    // Server expecting this format => {"barcode": "ASD3412BH"}
+    // Server expecting this format => {"barcode": "ASD3412BH", "is_manual": true}
     String httpRequestData = "{\"barcode\": \"";
     httpRequestData.concat(manualBarcode);
-    httpRequestData.concat("\"}");
+    httpRequestData.concat("\", \"is_manual\": true}");
 
 
     // Send HTTP POST request
@@ -546,11 +581,21 @@ bool sendCommandAndVerifyResponse(
 char processMultiTap(char key) {
   unsigned long currentTime = millis();
   unsigned long timeDiff = currentTime - lastPressTime;
+  char charToReturn = '\0';  // This will be the actual character returned by the function
 
-  char selectedChar = '\0';
+  // --- Logic to handle outputting the *previously* pending character ---
+  // If there's a character pending and the timeout has passed,
+  // or if a new key is pressed (and it's not the same as the last one being tapped),
+  // then output the pending character.
+  if (pendingOutputChar != '\0' && (key != lastKey || timeDiff > MULTI_TAP_TIMEOUT)) {
+    charToReturn = pendingOutputChar;  // Set the character to be returned
+    pendingOutputChar = '\0';          // Clear the pending character
+    outputReadyTime = 0;               // Reset the ready time
+  }
 
-  // Reset tap count if a new key is pressed or timeout (500ms)
-  if (key != lastKey || timeDiff > 500) {
+  // --- Multi-tap detection for the *current* key press ---
+  // Reset tap count if a new key is pressed or timeout (500ms) for current key processing
+  if (key != lastKey || timeDiff > MULTI_TAP_TIMEOUT) {
     tapCount = 0;
     lastKey = key;
   }
@@ -559,23 +604,29 @@ char processMultiTap(char key) {
   for (byte i = 0; i < ROWS; i++) {
     for (byte j = 0; j < COLS; j++) {
       if (keys[i][j] == key) {
-        tapCount++;
-        byte maxTaps = strlen(keyChars[i][j]);
-
-        // Wrap around if exceeding max taps
-        if (tapCount >= maxTaps) tapCount = 0;
 
         // Get the character from the multi-tap sequence
-        selectedChar = keyChars[i][j][tapCount];
-        Serial.print("Pressed: ");
-        Serial.println(selectedChar);
+        char selectedChar = keyChars[i][j][tapCount];  // Directly use tapCount
+
+        tapCount++;
+
+        // Wrap around if exceeding max taps
+        byte maxTaps = strlen(keyChars[i][j]);
+        if (tapCount >= maxTaps) tapCount = 0;
+
+        // This selectedChar is now the one that *would* be output if the user stops tapping
+        pendingOutputChar = selectedChar;
+        outputReadyTime = currentTime;  // Mark when this character became pending
         break;
       }
     }
   }
 
-  lastPressTime = currentTime;
+  lastPressTime = currentTime;  // Update the last press time for the current key
 
-
-  return selectedChar;
+  // --- Final check for the last character if loop ends without a new key or timeout ---
+  // This handles the very last sequence of taps where no new key is pressed.
+  // We check this in `loop()` where `processMultiTap` is called.
+  // `charToReturn` will hold the character from the *previous* completed sequence.
+  return charToReturn;
 }

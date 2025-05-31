@@ -1,9 +1,10 @@
 from django.urls import path
-from api.views import verify_barcode_scan, manual_barcode_verification, load_latest_scan
+from api.views import (
+	barcode_verification, load_latest_verification_records
+)
 
 app_name = "api"
 urlpatterns = [
-    path('upload/', verify_barcode_scan),
-    path('manual-verification/', manual_barcode_verification),
-    path('load-latest-scan/', load_latest_scan),
+	path('verify/', barcode_verification),
+	path('load-latest-records/', load_latest_verification_records),
 ]
